@@ -1,4 +1,5 @@
 namespace RocketBunnoAPI.Models;
+using System.Text.Json.Serialization;
 
 public class Score
 {
@@ -7,5 +8,7 @@ public class Score
     public DateTime Date { get; set; } = DateTime.UtcNow;
 
     public int UserId { get; set; }
+
+    [JsonIgnore]
     public User User { get; set; }
 }
