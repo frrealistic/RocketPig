@@ -5,19 +5,21 @@ using RocketBunnoAPI.Models;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-
+using Microsoft.AspNetCore.Identity;
 using System.Text;
-
 
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IConfiguration _config;
 
-    public UsersController(AppDbContext context)
+    // U konstruktoru injektiraj IConfiguration
+    public UsersController(AppDbContext context, IConfiguration config)
     {
         _context = context;
+        _config = config;  // Injektiraj _config
     }
 
     // POST api/users
@@ -74,44 +76,74 @@ public class UsersController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
-        var user = await _context.Users.FindAsync(id);
+        var user = await _context.Users
+            .Include(u => u.Scores)
+            .Include(u => u.Upgrades)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
         if (user == null)
             return NotFound();
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+
         return NoContent();
     }
+
     // POST api/users/register
-[HttpPost("register")]
-public async Task<IActionResult> Register([FromBody] User user)
-{
-    if (_context.Users.Any(u => u.Username == user.Username))
-        return BadRequest("Username already taken.");
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] User user)
+    {
+        // Normaliziraj korisničko ime (pretvori ga u mala slova)
+        user.Username = user.Username.ToLower();
 
-    _context.Users.Add(user);
-    await _context.SaveChangesAsync();
-    return Ok("User registered.");
-}
+        // Provjeri da li korisničko ime već postoji u bazi
+        if (_context.Users.Any(u => u.Username == user.Username))
+            return BadRequest("Username already taken.");
 
-// POST api/users/login
-[HttpPost("login")]
-public IActionResult Login([FromBody] User user)
-{
-    var existingUser = _context.Users.FirstOrDefault(u =>
-        u.Username == user.Username && u.Password == user.Password);
+        // Hashiraj lozinku prije nego je pohraniš
+        var passwordHasher = new PasswordHasher<User>();
+        user.Password = passwordHasher.HashPassword(user, user.Password);  
 
-    if (existingUser == null)
-        return Unauthorized("Invalid credentials.");
+        // Dodaj korisnika u bazu
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return Ok("User registered.");
+    }
 
-    var token = GenerateJwtToken(existingUser);
-    return Ok(new { token });
-}
+    [HttpPost("login")]
+    public IActionResult Login([FromBody] User user)
+    {
+        // Normaliziraj korisničko ime (pretvori u mala slova)
+        user.Username = user.Username.ToLower();
 
-// Metoda za generiranje tokena
+        var existingUser = _context.Users.FirstOrDefault(u =>
+            u.Username == user.Username);
+
+        if (existingUser == null)
+            return Unauthorized("Invalid credentials.");
+
+        // Provjera lozinke: koristi PasswordHasher za usporedbu
+        var passwordHasher = new PasswordHasher<User>();
+        var result = passwordHasher.VerifyHashedPassword(existingUser, existingUser.Password, user.Password);
+
+        if (result == PasswordVerificationResult.Failed)
+            return Unauthorized("Invalid credentials.");
+
+        var token = GenerateJwtToken(existingUser);
+        return Ok(new { token });
+    }
+
+    // Metoda za generiranje tokena
 private string GenerateJwtToken(User user)
 {
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("super_secret_key_123!"));
+    var keyString = _config["Jwt:Key"];
+    if (string.IsNullOrEmpty(keyString))
+    {
+        throw new ArgumentNullException("JWT key is not configured properly.");
+    }
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
     var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
     var claims = new[]
@@ -127,5 +159,4 @@ private string GenerateJwtToken(User user)
 
     return new JwtSecurityTokenHandler().WriteToken(token);
 }
-
 }

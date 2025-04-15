@@ -10,5 +10,5 @@ public class Score
     public int UserId { get; set; }
 
     [JsonIgnore]
-    public User User { get; set; }
+    public User? User { get; set; }  // User je nullable jer može biti null
 }

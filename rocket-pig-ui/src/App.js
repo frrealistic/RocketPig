@@ -1,43 +1,55 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
-import UsersList from './components/UsersList';
+import UserList from './components/UsersList';
+import Logout from './components/Logout'; // Dodano
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
+import axios from 'axios';
 
 function App() {
- /* Ovo sam zakomentirao prije nego sam poceo raditi sa routingom, commit na gitu naziv "Prije routinga"
- const [users, setUsers] = useState([]);   //users - Array koji sadrži dohvacene korisnike, setUsers je funkcija sa kojom se azuriraju usersi
+  const [users, setUsers] = useState([]);
+  const isLoggedIn = !!localStorage.getItem('jwtToken'); // Provjera postoji li token
 
   useEffect(() => {
-    axios.get('http://localhost:5154/api/users')
-      .then(response => {
-        console.log("Povezano s backendom!", response.data);
-        setUsers(response.data); //response se pohranjuje u Users
-      })
-      .catch(error => {
-        console.error("Greška u povezivanju s backendom!", error);
-      });
-  }, []);
-*/
+    const fetchUsers = async () => {
+      if (!isLoggedIn) return;
 
-  //UI dio ispod
+      try {
+        const response = await axios.get('http://localhost:5154/api/users', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+          }
+        });
+        console.log("Users fetched:", response.data);
+        setUsers(response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
+    fetchUsers();
+  }, [isLoggedIn]);
+
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>Korisnici</h1>
-      {users.length > 0 ? (
-        <ul>
-          {users.map(user => (
-            <li key={user.id}>
-              <strong>ID:</strong> {user.id} — <strong>Korisničko ime:</strong> {user.username}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>Nema dostupnih korisnika.</p>
-      )}
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+
+        <Route
+          path="/users"
+          element={
+            isLoggedIn ? (
+              <div>
+                <Logout />
+                <UserList users={users} />
+              </div>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
-export default App; //exportas da bi koristio negdje drugdje, npr index.js
+export default App;

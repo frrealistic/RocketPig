@@ -6,15 +6,32 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Dodavanje IConfiguration u DI (preko builder.Configuration)
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+
+// Provjera da li je Jwt:Key postavljen u konfiguraciji
+var keyString = builder.Configuration["Jwt:Key"];  // Koristi builder.Configuration
+
+if (string.IsNullOrEmpty(keyString))
+{
+    throw new ArgumentNullException("JWT key is not configured properly.");
+}
+
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+
+// Omogućavanje User Secrets ako koristiš ih za razvojnu konfiguraciju
+builder.Configuration.AddUserSecrets<Program>();
+
+// Dodavanje servisa za API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Dodavanje DbContexta za SQLite bazu podataka
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=rocketbunno.db"));
 
-// JWT authentication
+// JWT autentifikacija
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -24,12 +41,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes("super_secret_key_123!"))
+            IssuerSigningKey = key  // Korištenje već definirane SymmetricSecurityKey
         };
     });
 
-// CORS omogućeno da frontend (na portu 3000) može komunicirati s backendom na portu 5154
+// Omogućavanje CORS-a za komunikaciju s frontendom
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -40,7 +56,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Konfiguriranje HTTP request pipeline-a
 app.UseSwagger();
 app.UseSwaggerUI();
 
