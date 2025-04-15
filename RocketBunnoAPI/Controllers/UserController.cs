@@ -2,6 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RocketBunnoAPI.Data;
 using RocketBunnoAPI.Models;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+
+using System.Text;
+
 
 [ApiController]
 [Route("api/[controller]")]
@@ -76,4 +82,50 @@ public class UsersController : ControllerBase
         await _context.SaveChangesAsync();
         return NoContent();
     }
+    // POST api/users/register
+[HttpPost("register")]
+public async Task<IActionResult> Register([FromBody] User user)
+{
+    if (_context.Users.Any(u => u.Username == user.Username))
+        return BadRequest("Username already taken.");
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
+    return Ok("User registered.");
+}
+
+// POST api/users/login
+[HttpPost("login")]
+public IActionResult Login([FromBody] User user)
+{
+    var existingUser = _context.Users.FirstOrDefault(u =>
+        u.Username == user.Username && u.Password == user.Password);
+
+    if (existingUser == null)
+        return Unauthorized("Invalid credentials.");
+
+    var token = GenerateJwtToken(existingUser);
+    return Ok(new { token });
+}
+
+// Metoda za generiranje tokena
+private string GenerateJwtToken(User user)
+{
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("super_secret_key_123!"));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    var claims = new[]
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim(ClaimTypes.Name, user.Username)
+    };
+
+    var token = new JwtSecurityToken(
+        claims: claims,
+        expires: DateTime.UtcNow.AddHours(1),
+        signingCredentials: creds);
+
+    return new JwtSecurityTokenHandler().WriteToken(token);
+}
+
 }

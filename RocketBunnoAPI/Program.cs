@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using RocketBunnoAPI.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,10 +10,26 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=rocketbunno.db"));
 
-// Dodaj CORS konfiguraciju ovdje (unutar buildera)
+// JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes("super_secret_key_123!"))
+        };
+    });
+
+// CORS omogućeno da frontend (na portu 3000) može komunicirati s backendom na portu 5154
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -25,8 +44,9 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors("AllowAll"); // Aktivacija CORS-a
+app.UseCors("AllowAll");
 
+app.UseAuthentication();    // Ovo je KLJUČNO za JWT
 app.UseAuthorization();
 
 app.MapControllers();
