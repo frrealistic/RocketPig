@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RocketBunnoAPI.Data;
 using RocketBunnoAPI.Models;
+using RocketBunnoAPI.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -16,8 +17,15 @@ public class ScoresController : ControllerBase
 
     // POST api/scores
     [HttpPost]
-    public async Task<IActionResult> CreateScore([FromBody] Score score)
+    public async Task<IActionResult> CreateScore([FromBody] CreateScoreDto scoreDto)
     {
+        var score = new Score
+        {
+            Distance = scoreDto.Distance,
+            Date = scoreDto.Date,
+            UserId = scoreDto.UserId
+        };
+
         _context.Scores.Add(score);
         await _context.SaveChangesAsync();
         return Ok(score);
@@ -28,8 +36,17 @@ public class ScoresController : ControllerBase
     public async Task<IActionResult> GetAllScores()
     {
         var scores = await _context.Scores
-            .Include(s => s.User)  // Ovo će uključiti korisnika koji je napravio score
+            .Include(s => s.User)
+            .Select(s => new ScoreDto
+            {
+                Id = s.Id,
+                Distance = s.Distance,
+                Date = s.Date,
+                UserId = s.UserId,
+                Username = s.User.Username
+            })
             .ToListAsync();
+
         return Ok(scores);
     }
 
@@ -38,7 +55,7 @@ public class ScoresController : ControllerBase
     public async Task<IActionResult> GetScoreById(int id)
     {
         var score = await _context.Scores
-            .Include(s => s.User)  // Ovo će uključiti korisnika koji je napravio score
+            .Include(s => s.User)  // OOvo uključuje cijelog User objekta
             .FirstOrDefaultAsync(s => s.Id == id);
 
         if (score == null)
@@ -74,4 +91,6 @@ public class ScoresController : ControllerBase
         await _context.SaveChangesAsync();
         return NoContent();
     }
+
+
 }

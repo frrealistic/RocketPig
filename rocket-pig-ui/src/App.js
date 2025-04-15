@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import UserList from './components/UsersList';
-import Logout from './components/Logout'; // Dodano
+import Logout from './components/Logout'; 
+import MainMenu from './components/MainMenu'; 
+import Scoreboard from './components/Scoreboard';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -19,10 +21,10 @@ function App() {
             'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
           }
         });
-        console.log("Users fetched:", response.data);
+        //console.log("Users fetched:", response.data); --> za debug, prikazi sve korisnike 
         setUsers(response.data);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        //console.error("Error fetching users:", error);
       }
     };
 
@@ -33,7 +35,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
-
         <Route
           path="/users"
           element={
@@ -47,6 +48,11 @@ function App() {
             )
           }
         />
+          <Route
+            path="/menu"
+            element={isLoggedIn ? <MainMenu /> : <Navigate to="/" replace />}
+        />
+        <Route path="/scoreboard" element={<Scoreboard />} />
       </Routes>
     </Router>
   );

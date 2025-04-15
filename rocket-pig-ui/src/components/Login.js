@@ -9,7 +9,17 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [hoveredButton, setHoveredButton] = useState(null);
+  const [isTitleHovered, setIsTitleHovered] = useState(false);
   const navigate = useNavigate();
+
+  const handleMouseEnter = (buttonName) => {
+    setHoveredButton(buttonName);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredButton(null);
+  };
 
   const checkUsernameExists = async (normalizedUsername) => {
     try {
@@ -24,22 +34,22 @@ const Login = () => {
 
   const validateForm = async () => {
     if (!username.trim()) {
-      setError('Korisničko ime nije uneseno');
+      setError('Username is required');
       return false;
     }
 
     if (username.length < 4) {
-      setError('Ime mora imati barem 4 znaka');
+      setError('Username must be at least 4 characters long');
       return false;
     }
 
     if (password.length < 4) {
-      setError('Lozinka mora imati barem 4 znaka');
+      setError('Password must be at least 4 characters long');
       return false;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      setError('Lozinke se ne podudaraju');
+      setError('Passwords do not match');
       return false;
     }
 
@@ -47,7 +57,7 @@ const Login = () => {
       const normalizedUsername = username.toLowerCase();
       const usernameExists = await checkUsernameExists(normalizedUsername);
       if (usernameExists) {
-        setError('Korisničko ime već postoji');
+          setError('Username already exists');
         return false;
       }
     }
@@ -74,36 +84,50 @@ const Login = () => {
       if (isLogin) {
         const { token } = response.data;
         localStorage.setItem('jwtToken', token);
-        navigate('/users');
+        navigate('/menu');
       } else {
-        setSuccess('Registracija uspješna! Možete se prijaviti.');
+        setSuccess('Registration successful! You can now login.');
         setIsLogin(true);
         setPassword('');
         setConfirmPassword('');
       }
     } catch (error) {
       console.error(`${isLogin ? 'Login' : 'Registration'} error:`, error);
-      setError(isLogin ? 'Neispravni podaci za prijavu' : 'Registracija nije uspjela');
+      setError(isLogin ? 'Invalid login credentials' : 'Registration failed');
     }
   };
 
   return (
     <div style={styles.container}>
-      <div style={styles.formContainer}>
-        <h2 style={styles.title}>{isLogin ? 'Prijava' : 'Registracija'}</h2>
-        {error && <p style={styles.error}>{error}</p>}
-        {success && <p style={styles.success}>{success}</p>}
+      <div style={styles.content}>
+        <div 
+          style={styles.titleContainer}
+          onMouseEnter={() => setIsTitleHovered(true)}
+          onMouseLeave={() => setIsTitleHovered(false)}
+        >
+          <h1 style={{
+            ...styles.title,
+            transform: isTitleHovered ? 'rotate(-5deg) scale(1.05)' : 'rotate(-2deg)',
+            textShadow: isTitleHovered ? 
+              '6px 6px 0px #ff6b6b, 12px 12px 0px #4ecdc4' : 
+              '4px 4px 0px #ff6b6b, 8px 8px 0px #4ecdc4'
+          }}>
+            Rocket Pig
+          </h1>
+        </div>
+        <p style={styles.subtitle}>Launch Your Pig!</p>
+        
         <form onSubmit={handleSubmit} style={styles.form}>
           <input
             type="text"
-            placeholder="Korisničko ime"
+            placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             style={styles.input}
           />
           <input
             type="password"
-            placeholder="Lozinka"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={styles.input}
@@ -111,18 +135,29 @@ const Login = () => {
           {!isLogin && (
             <input
               type="password"
-              placeholder="Potvrdi lozinku"
+              placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               style={styles.input}
             />
           )}
-          <button type="submit" style={styles.button}>
-            {isLogin ? 'Prijavi se' : 'Registriraj se'}
+          {error && <p style={styles.error}>{error}</p>}
+          {success && <p style={styles.success}>{success}</p>}
+          <button 
+            type="submit"
+            style={{
+              ...styles.button,
+              ...(hoveredButton === 'submit' && styles.buttonHover)
+            }}
+            onMouseEnter={() => handleMouseEnter('submit')}
+            onMouseLeave={handleMouseLeave}
+          >
+            {isLogin ? 'Login' : 'Register'}
           </button>
         </form>
+        
         <p style={styles.switchText}>
-          {isLogin ? 'Nemate račun?' : 'Već imate račun?'}{' '}
+          {isLogin ? 'Don\'t have an account?' : 'Already have an account?'}{' '}
           <span
             style={styles.switchLink}
             onClick={() => {
@@ -131,7 +166,7 @@ const Login = () => {
               setSuccess(null);
             }}
           >
-            {isLogin ? 'Registriraj se' : 'Prijavi se'}
+            {isLogin ? 'Register' : 'Login'}
           </span>
         </p>
       </div>
@@ -145,69 +180,119 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
+    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    color: '#fff',
+    fontFamily: "'Poppins', sans-serif",
   },
-  formContainer: {
-    backgroundColor: 'white',
+  content: {
+    textAlign: 'center',
     padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    width: '100%',
-    maxWidth: '400px',
+    borderRadius: '15px',
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+    border: '1px solid rgba(255, 255, 255, 0.18)',
+    maxWidth: '600px',
+    width: '90%',
+  },
+  titleContainer: {
+    position: 'relative',
+    display: 'inline-block',
+    marginBottom: '1rem',
   },
   title: {
-    textAlign: 'center',
-    marginBottom: '1.5rem',
-    color: '#333',
+    fontSize: '6rem',
+    marginBottom: '0.5rem',
+    fontFamily: "'Luckiest Guy', cursive",
+    color: '#fff',
+    textShadow: '4px 4px 0px #ff6b6b, 8px 8px 0px #4ecdc4',
+    transform: 'rotate(-2deg)',
+    letterSpacing: '2px',
+    lineHeight: '1.2',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    display: 'inline-block',
+  },
+  subtitle: {
+    fontSize: '1.2rem',
+    marginBottom: '2.5rem',
+    color: '#a8a8a8',
+    letterSpacing: '1px',
+    fontFamily: "'Poppins', sans-serif",
+    fontWeight: '300',
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap: '1.2rem',
+    marginBottom: '1.5rem',
   },
   input: {
-    padding: '0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #ddd',
-    fontSize: '1rem',
+    padding: '1.2rem',
+    fontSize: '1.1rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: '#fff',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '8px',
     outline: 'none',
-    transition: 'border-color 0.2s',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    fontFamily: "'Poppins', sans-serif",
+    letterSpacing: '1px',
   },
   inputFocus: {
-    borderColor: '#007bff',
+    borderColor: '#4a90e2',
+    boxShadow: '0 0 0 2px rgba(74, 144, 226, 0.2)',
   },
   button: {
-    padding: '0.75rem',
-    backgroundColor: '#007bff',
+    padding: '1.2rem 2rem',
+    fontSize: '1.1rem',
+    backgroundColor: '#4a90e2',
     color: 'white',
     border: 'none',
-    borderRadius: '4px',
-    fontSize: '1rem',
+    borderRadius: '8px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    fontFamily: "'Poppins', sans-serif",
+    textTransform: 'uppercase',
+    letterSpacing: '2px',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
+    overflow: 'hidden',
+    fontWeight: '600',
   },
   buttonHover: {
-    backgroundColor: '#0056b3',
+    transform: 'translateY(-3px) scale(1.02)',
+    boxShadow: '0 8px 15px rgba(0, 0, 0, 0.2)',
+    backgroundColor: '#357abd',
   },
   error: {
-    color: '#dc3545',
+    color: '#ff6b6b',
     marginBottom: '1rem',
     textAlign: 'center',
+    fontSize: '0.9rem',
+    letterSpacing: '1px',
+    fontFamily: "'Poppins', sans-serif",
   },
   success: {
-    color: '#28a745',
+    color: '#4ecdc4',
     marginBottom: '1rem',
     textAlign: 'center',
+    fontSize: '0.9rem',
+    letterSpacing: '1px',
+    fontFamily: "'Poppins', sans-serif",
   },
   switchText: {
     textAlign: 'center',
-    marginTop: '1rem',
-    color: '#666',
+    color: '#a8a8a8',
+    fontSize: '0.9rem',
+    letterSpacing: '1px',
+    fontFamily: "'Poppins', sans-serif",
   },
   switchLink: {
-    color: '#007bff',
+    color: '#4a90e2',
     cursor: 'pointer',
     textDecoration: 'underline',
+    transition: 'color 0.3s ease',
+    fontFamily: "'Poppins', sans-serif",
   },
 };
 

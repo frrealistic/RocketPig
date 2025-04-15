@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Identity;
 using System.Text;
 
+
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
@@ -39,8 +40,19 @@ public class UsersController : ControllerBase
             .Include(u => u.Scores)
             .Include(u => u.Upgrades)
             .ToListAsync();
-        return Ok(users);
+
+        // Mapiraj korisnike u UserDto
+        var userDtos = users.Select(user => new UserDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Scores = user.Scores,
+            Upgrades = user.Upgrades
+        }).ToList();
+
+        return Ok(userDtos);
     }
+
 
     // GET api/users/{id}
     [HttpGet("{id}")]
@@ -54,7 +66,16 @@ public class UsersController : ControllerBase
         if (user == null)
             return NotFound();
 
-        return Ok(user);
+        // Mapiraj korisnika u UserDto
+        var userDto = new UserDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Scores = user.Scores,
+            Upgrades = user.Upgrades
+        };
+
+        return Ok(userDto);
     }
 
     // PUT api/users/{id}
