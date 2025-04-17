@@ -4,6 +4,7 @@ import UserList from './components/UsersList';
 import Logout from './components/Logout'; 
 import MainMenu from './components/MainMenu'; 
 import Scoreboard from './components/Scoreboard';
+import Game from './game/kaboom/Game';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -53,6 +54,10 @@ function App() {
             element={isLoggedIn ? <MainMenu /> : <Navigate to="/" replace />}
         />
         <Route path="/scoreboard" element={<Scoreboard />} />
+        <Route
+          path="/play"
+          element={isLoggedIn ? <Game /> : <Navigate to="/" replace />}
+        />
       </Routes>
     </Router>
   );
