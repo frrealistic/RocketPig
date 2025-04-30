@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "kaboom": "^3000.1.17"
+    "kaboom": "^3000.1.17",
+    "react-router": "^7.5.3",
+    "react-router-dom": "^7.5.3"
   }
 }
