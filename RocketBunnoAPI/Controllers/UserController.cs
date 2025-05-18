@@ -124,8 +124,7 @@ public class UsersController : ControllerBase
 
         // Hashiraj lozinku prije nego je pohraniš
         var passwordHasher = new PasswordHasher<User>();
-        user.Password = passwordHasher.HashPassword(user, user.Password);  
-
+        user.Password = passwordHasher.HashPassword(user, user.Password);
         // Dodaj korisnika u bazu
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
